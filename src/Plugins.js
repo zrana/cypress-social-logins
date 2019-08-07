@@ -22,8 +22,25 @@ module.exports.GoogleSocialLogin = async function GoogleSocialLogin(options = {}
   await page.goto(options.loginUrl)
 
   await login({page, options})
-  await typeUsername({page, options})
-  await typePassword({page, options})
+
+  await browser.on('targetcreated', async (target) => {
+    const pageList = await browser.pages();
+    const newPage = await pageList[pageList.length - 1];
+    const targetPage = await target.page();
+    if (targetPage !== null) {
+      await targetPage.waitForSelector('#identifierId');
+      await targetPage.type('#identifierId', options.username);
+      await targetPage.click('#identifierNext');
+      await targetPage.waitForSelector('#password input[type="password"]', { visible: true });
+      await targetPage.type('#password input[type="password"]', options.password, { delay: 10 });
+      await targetPage.click('#passwordNext');
+    }else{
+      await typeUsername({page, options})
+      await typePassword({page, options})
+    }
+
+  });
+  
 
   const cookies = await getCookies({page, options})
 
@@ -32,6 +49,7 @@ module.exports.GoogleSocialLogin = async function GoogleSocialLogin(options = {}
   return {
     cookies
   }
+
 }
 
 function validateOptions(options) {
